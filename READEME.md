@@ -1,0 +1,1 @@
+Task from Stream Programming course (Scala)
