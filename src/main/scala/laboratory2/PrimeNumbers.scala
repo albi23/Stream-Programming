@@ -1,3 +1,5 @@
+package laboratory2
+
 
 
 class PrimeNumbers(val n: Int) extends ValueHolder {

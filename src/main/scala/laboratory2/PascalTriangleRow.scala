@@ -1,3 +1,5 @@
+package laboratory2
+
 import scala.collection.mutable.ArrayBuffer
 
 class PascalTriangleRow(val n: Int) extends ValueHolder {

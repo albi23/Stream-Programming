@@ -1,3 +1,5 @@
+package laboratory2
+
 trait ValueHolder {
 
   def containsIndex(n: Int): Boolean

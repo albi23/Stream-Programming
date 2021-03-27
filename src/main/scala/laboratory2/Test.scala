@@ -1,4 +1,4 @@
-
+package laboratory2
 
 object Test {
 
@@ -11,7 +11,7 @@ object Test {
       System.exit(1)
     }
 
-    //    extractValueFromRange(new PrimeNumbers(args(0).toInt), args)
+    //        extractValueFromRange(new PrimeNumbers(args(0).toInt), args)
     extractValueFromRange(new PascalTriangleRow(args(0).toInt), args)
   }
 
