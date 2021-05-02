@@ -25,11 +25,11 @@ object FiguresManager {
     figures
   }
 
-  def validateFigureDef(args: Array[String],
-                        figureDef: String,
-                        parsedArgsIndex: Int,
-                        figureRequiredArgs: Int,
-                        resultFigures: ArrayBuffer[Figure]): Unit = {
+  private def validateFigureDef(args: Array[String],
+                                figureDef: String,
+                                parsedArgsIndex: Int,
+                                figureRequiredArgs: Int,
+                                resultFigures: ArrayBuffer[Figure]): Unit = {
     val figureArgs = args.slice(parsedArgsIndex, parsedArgsIndex + figureRequiredArgs)
     if (checkUnParsedArguments(figureDef, figureRequiredArgs, figureArgs)) {
       val parsedArgs = figureArgs.map(v => v.toDouble)
@@ -39,21 +39,23 @@ object FiguresManager {
     }
   }
 
-  def figureFactory(figureIdentifier: String, args: Array[Double]): Figure = {
+  private def figureFactory(figureIdentifier: String, args: Array[Double]): Figure = {
     figureIdentifier match {
       case "c" => new Circle(args(0))
       case "q" =>
-        if (args(0) != args(2))
+        if (math.min(args(0), args(2)) != math.max(args(1), args(3)) && args(4) == 90)
           return new Rectangle(args(0), args(1), args(2), args(3), args(4))
-        if (args(0) == args(2) && args(4) == 90)
+        if (math.min(args(0), args(2)) == math.max(args(1), args(3)) && args(4) == 90)
           return new Square(args(0), args(1), args(2), args(3), args(4))
-        new Rhombus(args(0), args(1), args(2), args(3), args(4))
+        if (math.min(args(0), args(2)) == math.max(args(1), args(3)))
+          new Rhombus(args(0), args(1), args(2), args(3), args(4))
+        throw new IllegalArgumentException(f"Incorrect arguments ${args.toList} for figure def $figureIdentifier")
       case "p" => new Pentagon(args(0))
       case "h" => new Hexagon(args(0))
     }
   }
 
-  def checkUnParsedArguments(figureIdentifier: String, requiredArgsCount: Int, args: Array[String]): Boolean = {
+  private def checkUnParsedArguments(figureIdentifier: String, requiredArgsCount: Int, args: Array[String]): Boolean = {
     for (arg <- args) {
       if (!NumberUtils.isCorrectNumber(arg, x => x.toDouble)) return false
     }
@@ -64,12 +66,12 @@ object FiguresManager {
     true
   }
 
-  def checkOrderAndAngle(figureIdentifier: String, args: Array[Double]): Boolean = {
+  private def checkOrderAndAngle(figureIdentifier: String, args: Array[Double]): Boolean = {
     if (!figureIdentifier.equals("q")) return true
-    if (!((args(0) == args(1)) && (args(2) == args(3)))) {
-      println(f"Incorrect args order for figure def [$figureIdentifier] ${args.mkString("[", ", ", "]")}")
-      return false
-    }
+    //    if (!((args(0) == args(1)) && (args(2) == args(3)))) {
+    //      println(f"Incorrect args order for figure def [$figureIdentifier] ${args.mkString("[", ", ", "]")}")
+    //      return false
+    //    }
     if (!(0 < args(4) && args(4) < 180)) {
       println(f"Incorrect angle value=${args(4)}  for figure def [$figureIdentifier]")
       return false
