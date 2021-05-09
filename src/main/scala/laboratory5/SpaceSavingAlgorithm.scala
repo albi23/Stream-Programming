@@ -18,16 +18,16 @@ object SpaceSavingAlgorithm {
   /**
    * Space saving version
    */
-  private def MirsaGriesAlgorithm1(input: LazyList[Any], k: Int): mutable.Map[Any, Int] = {
+  private def MirsaGriesAlgorithm1[T](input: LazyList[T], k: Int): mutable.Map[T, Int] = {
     if (k <= 0) throw new IllegalArgumentException("Param k should be greater than 0")
-    val histogram: mutable.Map[Any, Int] = mutable.Map[Any, Int]()
+    val histogram: mutable.Map[T, Int] = mutable.Map[T, Int]()
     input.foreach(param => {
       if (histogram.contains(param)) {
         histogram(param) += 1
       } else if (histogram.size < k) {
         histogram.put(param, 1)
       } else {
-        var min: (Any, Int) = ("", Int.MaxValue)
+        var min: (T, Int) = (null.asInstanceOf[T] , Int.MaxValue)
         for ((k, v) <- histogram) {
           if (v < min._2) {
             min = (k, v)
@@ -45,12 +45,12 @@ object SpaceSavingAlgorithm {
    * @param e     - epsilon
    * @return      - map
    */
-  private def MirsaGriesAlgorithm2(input: LazyList[Any], e: Double): mutable.Map[Any, (Int, Int)] = {
+  private def MirsaGriesAlgorithm2[T](input: LazyList[T], e: Double): mutable.Map[T, (Int, Int)] = {
     if (e <= 0 || e > 1) throw new IllegalArgumentException("Param e should be between 0 and 1")
     val bucketSize: Int = (1 / e).toInt
     var currBucket = 1
     var n = 0
-    val statistics: mutable.Map[Any, (Int, Int)] = mutable.Map[Any, (Int, Int)]()
+    val statistics: mutable.Map[T, (Int, Int)] = mutable.Map[T, (Int, Int)]()
     input.foreach(x => {
       n += 1
       if (statistics.contains(x)) {

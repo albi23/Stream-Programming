@@ -1,6 +1,6 @@
 package laboratory4.model
 
-class Car(val mark: String) {
+class Car(private val mark: String) {
   private final val hash: Int = Seq(mark).map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
 
   override def equals(other: Any): Boolean =

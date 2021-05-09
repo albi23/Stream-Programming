@@ -17,9 +17,9 @@ object MirsaGriesMain {
     println(MirsaGriesAlgorithm(input.to(LazyList), 5))
   }
 
-  private def MirsaGriesAlgorithm(input: LazyList[Any], k: Int): mutable.Map[Any, Int] = {
+  private def MirsaGriesAlgorithm[T](input: LazyList[T], k: Int): mutable.Map[T, Int] = {
     if (k <= 0) throw new IllegalArgumentException("Param k should be greater than 0")
-    val histogram: mutable.Map[Any, Int] = mutable.Map[Any, Int]()
+    val histogram: mutable.Map[T, Int] = mutable.Map[T, Int]()
 
     input.foreach(param => {
       if (histogram.contains(param)) {
@@ -28,7 +28,7 @@ object MirsaGriesMain {
         histogram.put(param, 1)
       } else {
         histogram.keys.foreach(k => if (histogram(k) != 1) histogram(k) -= 1 else histogram.remove(k))
-        }
+      }
     })
     histogram
   }

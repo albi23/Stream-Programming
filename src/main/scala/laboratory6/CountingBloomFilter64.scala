@@ -3,9 +3,9 @@ package laboratory6
 import java.util
 
 
-class CountingBloomFilter64[T](var filterBuilder: FilterBuilder) extends CountingBloomFilter[T] {
+class CountingBloomFilter64[T](private var filterBuilder: FilterBuilder) extends CountingBloomFilter[T] {
 
-  private val MAX = 9223372036854775807L
+  private val MAX = 9_223_372_036_854_775_807L
   private val counters: Array[Long] = new Array[Long](filterBuilder.getSize)
   protected val config: FilterBuilder = this.filterBuilder.complete()
   protected val counts = new util.BitSet(config.getSize * config.getCountingBits)
@@ -59,4 +59,15 @@ class CountingBloomFilter64[T](var filterBuilder: FilterBuilder) extends Countin
     }
     true
   }
+
+  protected def count(index: Int): Long = {
+     this.counters(index)
+  }
+
+
+  override def toString = s"CountingBloomFilter64{" +
+    s"\ncounters=${counters.mkString("[", ", ", "]")},\n" +
+    s"config=$config\n" +
+    s"counts=${counts.toString},\n" +
+    s"bloom=${bloom.toString})}"
 }

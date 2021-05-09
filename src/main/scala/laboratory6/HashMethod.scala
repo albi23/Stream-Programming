@@ -30,6 +30,6 @@ object HashMethod extends Enumeration {
 
 
   trait HashFunction extends Serializable {
-    def hash(var1: Array[Byte], var2: Int, var3: Int): Array[Int]
+    def hash(bytes: Array[Byte], size: Int, hashes: Int): Array[Int]
   }
 }

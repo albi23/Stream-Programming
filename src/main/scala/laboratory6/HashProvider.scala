@@ -21,10 +21,10 @@ object HashProvider {
     if (a == null) 0
     else {
       var result = FNV_OFFSET_BASIS
-      val var7 = a
-      val var8 = a.length
-      for (var9 <- 0 until var8) {
-        val element = var7(var9)
+      val array = a
+      val arrLength = a.length
+      for (i <- 0 until arrLength) {
+        val element = array(i)
         result = result * FNV_PRIME & -1L
         result ^= element.toLong
       }

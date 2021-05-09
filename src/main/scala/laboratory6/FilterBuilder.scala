@@ -2,19 +2,20 @@ package laboratory6
 
 import laboratory6.HashMethod.HashFunction
 
-class FilterBuilder(var expectedElements: Int,
-                    var falsePositiveProbability: Double) {
+class FilterBuilder(private var expectedElements: Int,
+                    private var falsePositiveProbability: Double) {
 
   private var done: Boolean = false
   private var size: Int = -1
   private var hashes: Int = -1
   private var hashMethod: HashMethod.HashMethodImpl = HashMethod.RNG
-  private var hashFunction: HashFunction = null
+  private var hashFunction: HashFunction = hashMethod.getHashFunction
   private val countingBits: Int = 64
 
 
   def optimalM(n: Long, p: Double): Int = Math.ceil(-1.0D * n.toDouble * Math.log(p) / Math.pow(Math.log(2.0D), 2.0D)).toInt
 
+  /* log_e(2)(n/m) */
   def optimalK(n: Long, m: Long): Int = Math.ceil(Math.log(2.0D) * m.toDouble / n.toDouble).toInt
 
   def expectedElements(expectedElements: Int): FilterBuilder = {
@@ -70,4 +71,7 @@ class FilterBuilder(var expectedElements: Int,
   def getHashes: Int ={
     this.hashes
   }
+
+  override def toString =
+    s"FilterBuilder{size=$size, hashes=$hashes, hashMethod=$hashMethod, countingBits=$countingBits, expectedElements=$expectedElements, falsePositiveProbability=$falsePositiveProbability}"
 }
