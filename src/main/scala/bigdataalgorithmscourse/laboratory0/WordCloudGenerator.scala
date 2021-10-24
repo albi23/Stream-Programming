@@ -46,7 +46,7 @@ object WordCloudGenerator {
   private def parseInputDataSource(source: Iterator[String]): Map[String, Int] = {
     source
       .filter(line => !line.isBlank)
-      .flatMap(line => line.split("\\p{Punct}| ").map(word => word.strip()).filter(word => !word.isBlank && !STOP_WORDS.contains(word)))
+      .flatMap(line => line.split("""[ \\p{Punct} ]""").map(word => word.strip()).filter(word => !word.isBlank && !STOP_WORDS.contains(word.toLowerCase())))
       .foldLeft(Map.empty[String, Int]) { (m, x) => m + ((x, m.getOrElse(x, 0) + 1)) }
   }
 
