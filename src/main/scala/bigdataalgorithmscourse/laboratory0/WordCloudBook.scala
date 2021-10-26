@@ -8,7 +8,7 @@ import scala.util.Using
 object WordCloudBook {
 
   private final val ROOT_DIR: String = System.getProperty("user.dir") + File.separator + String.join(File.separator, "src", "resources") + File.separator
-  private final val BOOK_FILE_PATH: String = ROOT_DIR + "The-Declaration-of-Independence-of-the-United-States-of-America.txt";
+  private final val BOOK_FILE_PATH: String = ROOT_DIR + "testBooks/The-Declaration-of-Independence-of-the-United-States-of-America.txt";
   private final val WC_OUT_DIR: String = ROOT_DIR + "wc.txt";
   private final val STOP_WORDS: Set[String] = Using(Source.fromFile(ROOT_DIR + "stopwords_en.txt"))(s => s.getLines().toSet).get;
 

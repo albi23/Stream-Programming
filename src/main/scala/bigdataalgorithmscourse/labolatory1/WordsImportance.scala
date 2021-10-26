@@ -1,7 +1,5 @@
 package bigdataalgorithmscourse.labolatory1
 
-import bigdataalgorithmscourse.labolatory1.WordsImportance.Book.{BOOK1, BOOK2, MERGED}
-
 import java.io.File
 import java.util.regex.Pattern
 import scala.collection.immutable.ListMap
@@ -12,66 +10,77 @@ import scala.util.Using
 
 object WordsImportance {
 
-  object Book extends Enumeration {
-    type Book = Value
+  case class Book(id: Int, title: String);
 
-    val BOOK1: Book = Value("A-Point-of-Testimony.txt")
-    val BOOK2: Book = Value("The-Declaration-of-Independence-of-the-United-States-of-America.txt")
-    val MERGED: Book = Value("Merged_Books")
-  }
-
-  private final val BOOKS = List(BOOK1, BOOK2)
-  private final var GENERATOR_CONTEXT: mutable.Map[Int, mutable.Map[String, Int]] = mutable.Map[Int, mutable.Map[String, Int]]()
   private final val ROOT_DIR: String = System.getProperty("user.dir") + File.separator + String.join(File.separator, "src", "resources") + File.separator
   private final val STOP_WORDS: Set[String] = Using(Source.fromFile(ROOT_DIR + "stopwords_en.txt"))(s => s.getLines().toSet).get;
   private final val SPLIT_REGEX = Pattern.compile("""[^\x21-\x7E]|[\p{Punct}]""")
 
 
   def main(args: Array[String]): Unit = {
-    loadFiles
-    printNTheMostFrequentWords(30)
-    TFIDF()
+    comparisonBooks()
+/*    val books = List(
+      Book(1, "A-Point-of-Testimony.txt"),
+      Book(2, "testBooks/The-Declaration-of-Independence-of-the-United-States-of-America.txt"),
+      Book(3, "MergedBooks")
+    )
+
+    val statisticMap = loadBooksFromFile(books, withMergedValue = true)
+    printNTheMostFrequentWords(30, statisticMap, books)
+    TFIDF(10, statisticMap, books)*/
   }
 
-  def TFIDF(): Unit = {
-    BOOKS.foreach(book => {
+  def comparisonBooks(): Unit = {
+    val similarTopicBooks: List[Book] = Range(1, 11)
+      .map(i => Book(i, f"testBooks/The Essays of Montaigne, V$i.txt"))
+      .toList
+
+    val statisticMap = loadBooksFromFile(similarTopicBooks)
+    printNTheMostFrequentWords(30, statisticMap, similarTopicBooks)
+    TFIDF(30, statisticMap, similarTopicBooks)
+
+
+  }
+
+  def TFIDF(n: Int, statisticMap: mutable.Map[Int, mutable.Map[String, Int]], books: List[Book]): Unit = {
+    books.foreach(book => {
       val tfidfResults = ArrayBuffer.empty[(Double, String)]
-      println("Data for: " + book)
-      val wordOccurrencesInDocument = GENERATOR_CONTEXT(book.id).values.sum.toDouble
+      val wordOccurrencesInDocument = statisticMap(book.id).values.sum.toDouble
       if (wordOccurrencesInDocument == 0) {
         throw new IllegalStateException("Can not determine TFIDF for empty set.")
       }
 
-      GENERATOR_CONTEXT(book.id).foreach(entry => {
-        val wordInDocuments: Int = BOOKS.map(b => if (GENERATOR_CONTEXT(b.id).contains(entry._1)) 1 else 0).sum
-        val result = (entry._2 / wordOccurrencesInDocument) * Math.log(BOOKS.size / wordInDocuments.doubleValue)
+      statisticMap(book.id).foreach(entry => {
+        val wordInDocuments: Int = books.map(b => if (statisticMap(b.id).contains(entry._1)) 1 else 0).sum
+        val result = (entry._2 / wordOccurrencesInDocument) * Math.log(books.size / wordInDocuments.doubleValue)
         tfidfResults.addOne((result, entry._1))
       })
-
-      println(tfidfResults.sortWith(_._1 > _._1).take(10))
+      println(f"Data for: $book \n" + tfidfResults.sortWith(_._1 > _._1).take(n).mkString(" ") + "\n")
     })
   }
 
-  private def printNTheMostFrequentWords(n: Int): Unit = {
-    Book.values.foreach(book => {
-      println("Data for book: " + book)
-      val mostCommonWords = ListMap(GENERATOR_CONTEXT(book.id).toSeq.sortWith(_._2 > _._2): _*).take(n).mkString("\n")
-      println(mostCommonWords)
-    })
+  private def printNTheMostFrequentWords(n: Int, statisticMap: mutable.Map[Int, mutable.Map[String, Int]], books: List[Book]): Unit = {
+    println("--- Most Frequent Words ---")
+    books.foreach(book =>
+      println("Data for book: " + book.title + "\n" + ListMap(statisticMap(book.id).toSeq.sortWith(_._2 > _._2): _*).take(n).mkString("\n"))
+    )
   }
 
-  private def loadFiles: mutable.Map[Int, mutable.Map[String, Int]] = {
+  private def loadBooksFromFile(books: List[Book], withMergedValue: Boolean = false): mutable.Map[Int, mutable.Map[String, Int]] = {
+    val statisticMap: mutable.Map[Int, mutable.Map[String, Int]] = mutable.Map[Int, mutable.Map[String, Int]]()
     var mergedOccurrences: mutable.Map[String, Int] = mutable.Map[String, Int]()
-    BOOKS.foreach(book => {
-      Using(Source.fromFile(ROOT_DIR + book)) {
+    books.foreach(book => {
+      Using(Source.fromFile(ROOT_DIR + book.title)) {
         source => {
           val occurrencesPerBook: mutable.Map[String, Int] = parseInputDataSource(source.getLines())
-          mergedOccurrences = merge(mergedOccurrences, occurrencesPerBook)
-          GENERATOR_CONTEXT += book.id -> occurrencesPerBook
+          if (withMergedValue) {
+            mergedOccurrences = merge(mergedOccurrences, occurrencesPerBook)
+          }
+          statisticMap += book.id -> occurrencesPerBook
         }
       }
     })
-    GENERATOR_CONTEXT += MERGED.id -> mergedOccurrences
+    if (withMergedValue) statisticMap += books.size -> mergedOccurrences else statisticMap
   }
 
   private def parseInputDataSource(source: Iterator[String]): mutable.Map[String, Int] = {
