@@ -18,8 +18,8 @@ object WordsImportance {
 
 
   def main(args: Array[String]): Unit = {
-    comparisonBooks()
-/*    val books = List(
+
+    val books = List(
       Book(1, "A-Point-of-Testimony.txt"),
       Book(2, "testBooks/The-Declaration-of-Independence-of-the-United-States-of-America.txt"),
       Book(3, "MergedBooks")
@@ -27,18 +27,39 @@ object WordsImportance {
 
     val statisticMap = loadBooksFromFile(books, withMergedValue = true)
     printNTheMostFrequentWords(30, statisticMap, books)
-    TFIDF(10, statisticMap, books)*/
+    TFIDF(10, statisticMap, books)
+    comparisonBooks(1)
   }
 
-  def comparisonBooks(): Unit = {
-    val similarTopicBooks: List[Book] = Range(1, 11)
-      .map(i => Book(i, f"testBooks/The Essays of Montaigne, V$i.txt"))
-      .toList
+  def comparisonBooks(mode: Int): Unit = {
 
-    val statisticMap = loadBooksFromFile(similarTopicBooks)
-    printNTheMostFrequentWords(30, statisticMap, similarTopicBooks)
-    TFIDF(30, statisticMap, similarTopicBooks)
+    val inputBooks = mode match{
+      case 1 => Range(1, 11)
+        .map(i => Book(i, f"testBooks/The Essays of Montaigne, V$i.txt"))
+        .toList
+      case 2 =>   Range(1, 6)
+        .map(i => Book(i, f"testBooks/The Essays of Montaigne, V$i.txt"))
+        .toList.appendedAll(
+        List("A Spring Harvest, Tolkien.txt", "Explanation of Terms Used in Entomology.txt",
+          "History of the War.txt", "Principles of Orchestration.txt", "Rome and Juliet.txt")
+          .zipWithIndex.map(entry => Book(entry._2 + 6, f"testBooks/"+entry._1)));
+      case _ => List(
+        Book(1, "testBooks/A Spring Harvest, Tolkien.txt"),
+        Book(2, "testBooks/Explanation of Terms Used in Entomology.txt"),
+        Book(3, "testBooks/History of the War.txt"),
+        Book(4, "testBooks/Principles of Orchestration.txt"),
+        Book(5, "testBooks/Rome and Juliet.txt"),
+        Book(6, "testBooks/Symbolic Logic.txt"),
+        Book(7, "testBooks/The Economist.txt"),
+        Book(8, "testBooks/The Legends of the Jews.txt"),
+        Book(9, "testBooks/The Special and General Theory, Albert Einstein.txt"),
+        Book(10, "testBooks/The Whitehouse Cookbook.txt"),
+      )
+    }
 
+    val statisticMap = loadBooksFromFile(inputBooks)
+    printNTheMostFrequentWords(30, statisticMap, inputBooks)
+    TFIDF(30, statisticMap, inputBooks)
 
   }
 
