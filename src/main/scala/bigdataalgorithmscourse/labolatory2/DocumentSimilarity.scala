@@ -1,12 +1,13 @@
 package bigdataalgorithmscourse.labolatory2
 
-import bigdataalgorithmscourse.utils.{Color}
+import bigdataalgorithmscourse.utils.Color
 
-import java.io.File
+import java.io.{File, FileWriter}
 import java.util.regex.Pattern
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
-import scala.util.Using
+import scala.util.{Random, Using}
 
 
 object DocumentSimilarity {
@@ -17,10 +18,22 @@ object DocumentSimilarity {
 
 
   def main(args: Array[String]): Unit = {
-    documentSimilarityTest()
+    intersectionSimilarityTest()
+    minhashSignaturesSimilarityTest()
   }
 
-  def documentSimilarityTest(): Unit = {
+  def intersectionSimilarityTest(): Unit = {
+    val tuple = getTestData()
+    intersectionSimilarity(tuple._1, tuple._2)
+
+  }
+
+  def minhashSignaturesSimilarityTest(): Unit = {
+    val tuple = getTestData()
+    minhashSignaturesSimilarity(tuple._1, tuple._2)
+  }
+
+  def getTestData(): (List[Int], List[(String, List[String])]) = {
     val kParams = List.range(2, 14)
     val testBooks = List("The Essays of Montaigne, V1.txt", "The Essays of Montaigne, V2.txt",
       "The Essays of Montaigne, V3.txt", "Rome and Juliet.txt",
@@ -32,25 +45,93 @@ object DocumentSimilarity {
       (testBook, parsedWordSet)
     })
 
+    (kParams, bookOnWords)
+  }
+
+  private def minhashSignaturesSimilarity(kParams: List[Int], bookOnWords: List[(String, List[String])]): Unit = {
+
+    val outDir = System.getProperty("user.dir") + "/src/main/scala/bigdataalgorithmscourse/labolatory2/minhashresults.txt".replaceAll("/", File.separator)
+    Using(new FileWriter(outDir)) { fileWriter => {
+      val booksTitles: List[String] = bookOnWords.map(x => x._1)
+      val hashFunctionsParams: List[Int] = List(10, 100, 250, 500)
+      kParams.foreach(paramK => {
+        println("k = " + paramK)
+        val shinglesArr = new ArrayBuffer[Set[String]](bookOnWords.size)
+        var allWordsCollection = Set[String]()
+        bookOnWords.foreach(bookWordTuple => {
+          val shingles = constructShingles(paramK, bookWordTuple._2)
+          shinglesArr += shingles
+          allWordsCollection = allWordsCollection.union(shingles)
+        })
+
+        val allWords = allWordsCollection.toArray
+        hashFunctionsParams.foreach(hashFunctionCount => {
+          val signatures: Array[Array[Int]] = calculateSignatures(allWords, shinglesArr, hashFunctionCount)
+          fileWriter.append(getPrintResults(paramK, hashFunctionCount, booksTitles, signatures))
+        })
+
+      })
+    }
+    }
+  }
+
+  def getPrintResults(kParam: Int, hashFunctionCount: Int, books: List[String], signatures: Array[Array[Int]]): String = {
+
+    var result: String = "";
+    val setSignatures = signatures.map(signature => signature.toSet)
+    for ((bookTitle, idx1) <- books.view.zipWithIndex) {
+      result += s"\n[For K $kParam] [For n=$hashFunctionCount] --> For book: $bookTitle  <--\n"
+      val sigBookA = setSignatures(idx1)
+      for ((pariBook, idx2) <- books.view.zipWithIndex) {
+        if (idx1 != idx2) {
+          result += s"($pariBook, ${jacquardSimilarity(sigBookA, setSignatures(idx2))}),\n"
+        }
+      }
+    }
+    result
+  }
+
+  private def calculateSignatures(allWords: Array[String], shinglesArr: ArrayBuffer[Set[String]], hashingFunctionCount: Int): Array[Array[Int]] = {
+    val hashValues: Array[Int] = List.range(0, allWords.length).toArray
+    val hashTable: Array[mutable.ArraySeq[Int]] = Iterator.from(0)
+      .takeWhile(i => i < hashingFunctionCount)
+      .map(_ => Random.shuffle(hashValues)).toArray
+
+    val signaturesArr = new Array[Array[Int]](shinglesArr.length)
+    val zipWithIndex = allWords.view.zipWithIndex
+    for ((bookShingles, bookIdx) <- shinglesArr.view.zipWithIndex) {
+      val singleColSignature = new Array[Int](allWords.length)
+      for ((word, idx) <- zipWithIndex) {
+        if (bookShingles.contains(word)) {
+          singleColSignature(idx) = Iterator.range(0, hashingFunctionCount).map(i => hashTable(i)(idx)).min
+        } else {
+          singleColSignature(idx) = Int.MaxValue
+        }
+      }
+      signaturesArr(bookIdx) = singleColSignature
+    }
+
+    signaturesArr
+  }
+
+  private def intersectionSimilarity(kParams: List[Int], bookOnWords: List[(String, List[String])]): Unit = {
     kParams.foreach(paramK => {
       println(Color.RED.makeColorBg(s"[For K $paramK]"))
-      bookOnWords.foreach(bookWordTuple =>{
-        println(Color.BLUE.makeColor("--> For book: "+bookWordTuple._1 + " <--"))
-        val shinglesA = constructShingles(paramK, bookWordTuple._2 )
+      bookOnWords.foreach(bookWordTuple => {
+        println(Color.BLUE.makeColor("--> For book: " + bookWordTuple._1 + " <--"))
+        val shinglesA: Set[String] = constructShingles(paramK, bookWordTuple._2)
         val str = bookOnWords.filter(tuple => !tuple._1.equals(bookWordTuple._1))
           .map(pairBook => {
-            val shinglesB = constructShingles(paramK, pairBook._2)
-            (pairBook._1, jaccardSimilarity(shinglesA, shinglesB))
+            val shinglesB: Set[String] = constructShingles(paramK, pairBook._2)
+            (pairBook._1, jacquardSimilarity(shinglesA, shinglesB))
           }).mkString(",\n")
-        println(str+" \n")
+        println(str + " \n")
 
       })
     })
-
-
   }
 
-  private def jaccardSimilarity[T](set1: Set[T], set2: Set[T]): Double = {
+  private def jacquardSimilarity[T](set1: Set[T], set2: Set[T]): Double = {
     set1.intersect(set2).size.toDouble / set1.union(set2).size.toDouble
   }
 
