@@ -50,7 +50,7 @@ object DocumentSimilarity {
 
   private def minhashSignaturesSimilarity(kParams: List[Int], bookOnWords: List[(String, List[String])]): Unit = {
 
-    val outDir = System.getProperty("user.dir") + "/src/main/scala/bigdataalgorithmscourse/labolatory2/minhashresults.txt".replaceAll("/", File.separator)
+    val outDir = System.getProperty("user.dir") + "/src/main/scala/bigdataalgorithmscourse/labolatory2/minhashresults.txt".replaceAll("//", File.separator)
     Using(new FileWriter(outDir)) { fileWriter => {
       val booksTitles: List[String] = bookOnWords.map(x => x._1)
       val hashFunctionsParams: List[Int] = List(10, 100, 250, 500)
@@ -77,18 +77,17 @@ object DocumentSimilarity {
 
   def getPrintResults(kParam: Int, hashFunctionCount: Int, books: List[String], signatures: Array[Array[Int]]): String = {
 
-    var result: String = "";
-    val setSignatures = signatures.map(signature => signature.toSet)
+    var result: mutable.StringBuilder = new StringBuilder();
     for ((bookTitle, idx1) <- books.view.zipWithIndex) {
-      result += s"\n[For K $kParam] [For n=$hashFunctionCount] --> For book: $bookTitle  <--\n"
-      val sigBookA = setSignatures(idx1)
+      result ++= s"\n[For K $kParam] [For n=$hashFunctionCount] --> For book: $bookTitle  <--\n"
+      val sigBookA = signatures(idx1).toSet
       for ((pariBook, idx2) <- books.view.zipWithIndex) {
         if (idx1 != idx2) {
-          result += s"($pariBook, ${jacquardSimilarity(sigBookA, setSignatures(idx2))}),\n"
+          result ++= s"($pariBook, ${jacquardSimilarity(sigBookA, signatures(idx2).toSet)}),\n"
         }
       }
     }
-    result
+    result.toString()
   }
 
   private def calculateSignatures(allWords: Array[String], shinglesArr: ArrayBuffer[Set[String]], hashingFunctionCount: Int): Array[Array[Int]] = {
@@ -117,17 +116,15 @@ object DocumentSimilarity {
   private def intersectionSimilarity(kParams: List[Int], bookOnWords: List[(String, List[String])]): Unit = {
     kParams.foreach(paramK => {
       println(Color.RED.makeColorBg(s"[For K $paramK]"))
-      bookOnWords.foreach(bookWordTuple => {
-        println(Color.BLUE.makeColor("--> For book: " + bookWordTuple._1 + " <--"))
-        val shinglesA: Set[String] = constructShingles(paramK, bookWordTuple._2)
-        val str = bookOnWords.filter(tuple => !tuple._1.equals(bookWordTuple._1))
-          .map(pairBook => {
-            val shinglesB: Set[String] = constructShingles(paramK, pairBook._2)
-            (pairBook._1, jacquardSimilarity(shinglesA, shinglesB))
-          }).mkString(",\n")
-        println(str + " \n")
-
-      })
+      for (i <- 0 until  bookOnWords.size - 1){
+        println(Color.BLUE.makeColor("--> For book: " + bookOnWords(i)._1 + " <--"))
+        val shinglesA: Set[String] = constructShingles(paramK, bookOnWords(i)._2)
+        for (j <- (i + 1) until bookOnWords.size){
+          val shinglesB: Set[String] = constructShingles(paramK, bookOnWords(j)._2)
+          println((bookOnWords(j)._1, jacquardSimilarity(shinglesA, shinglesB)))
+        }
+        println(" \n")
+      }
     })
   }
 
