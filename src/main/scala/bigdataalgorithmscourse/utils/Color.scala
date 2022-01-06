@@ -10,7 +10,7 @@ object Color extends Enumeration {
   val RED:    Val = Val("\u001b[48;5;160m", "\u001b[31m")
   val BLUE:   Val = Val("\u001b[48;5;20m", "\u001b[34m")
   val GREEN:  Val = Val("\u001b[48;5;28m", "\u001b[32m")
-  val YELLOW: Val = Val("\u001b[48;5;226m", "\u001b[33m")
+  val YELLOW: Val = Val("\u001b[48;5;226m", "\u001b[93m")
   val WHITE:  Val = Val("\u001b[48;5;0m", "\u001b[0m")
   val PINK:   Val = Val("\u001b[48;5;165m", "\u001b[35m")
 }
