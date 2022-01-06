@@ -19,13 +19,12 @@ object Crawler {
   private val visitedURLS = createConcurrentSet[String]()
   private val linksConnections = new ConcurrentHashMap[String, Set[String]]()
 
-
   def main(args: Array[String]): Unit = {
     if (args.isEmpty) {
       println(
         s"""
            |${RED.makeColor("Missing mode argument. Usage")} ${BLUE.makeColor("mode")} <${GREEN.makeColor("args")}> :
-           | -  ${BLUE.makeColor("rank")} ${GREEN.makeColor("matrix-multiplication [Int]")} ${GREEN.makeColor("vector-value [Double]")} ${GREEN.makeColor("out-file-name.txt")}
+           | -  ${BLUE.makeColor("rank")} ${GREEN.makeColor("matrix-multiplication [Int]")} ${GREEN.makeColor("vector-value [Double]")} ${GREEN.makeColor("in-file-name.txt")}
            | -  ${BLUE.makeColor("crawl")} ${GREEN.makeColor("page-count [Int] out-file-name.txt")}
            | -  ${BLUE.makeColor("analyse")}
            |""".stripMargin)
@@ -46,7 +45,7 @@ object Crawler {
   private def handleRankMode(args: Array[String]): Unit = {
     if (args.length < 4 || args(2).isBlank) throw new IllegalArgumentException("Incorrect input")
 
-    val allLinks = new mutable.HashSet[String]()
+    val allLinks = new mutable.HashMap[String, Int]()
     val pageOnLinks = new mutable.HashMap[String, List[String]]()
     println(YELLOW.makeColor(s"[Info] Reading input file: ${args(3)}"))
     val openedSource = Using(Source.fromFile(args(3)))(source => collectDataFromFile(allLinks, pageOnLinks, source))
@@ -55,57 +54,66 @@ object Crawler {
       System.exit(1)
     }
 
-
     println(YELLOW.makeColor(s"[Info] Start creating matrix [${allLinks.size} x ${allLinks.size}]"))
     val linksMatrix: CSCMatrix[Double] = createLinksMatrix(allLinks, pageOnLinks)
     var rankVector = DenseVector.fill(allLinks.size, args(2).toDouble)
     val int = args(1).toInt
     print("Matrix multiplication: ")
     for (i <- 1 to int) {
-      print(s"\r(${(i.toDouble / int)*100}%)")
+      print(s"\r(${(i.toDouble / int) * 100}%)")
       rankVector = linksMatrix * rankVector
     }
 
     println(YELLOW.makeColor(s"\r[Info] ### Page Ranking ###"))
     val resultRank = constructResultPageRanking(allLinks, rankVector).take(100).sortBy { case (x, _) => -x }
-    println(resultRank.map(x => s"${BLUE.makeColor("[Value]")} ${x._1} ${BLUE.makeColor("[Page]")}: ${x._2} ").mkString("\r", "\n",""))
+    println(resultRank.map(x => s"${BLUE.makeColor("[Value]")} ${x._1} ${BLUE.makeColor("[Page]")}: ${x._2} ").mkString("\r", "\n", ""))
   }
 
-  private def constructResultPageRanking(allLinks: mutable.HashSet[String], rankVector: DenseVector[Double]): ListBuffer[(Double, String)] = {
+  private def constructResultPageRanking(allLinks: mutable.HashMap[String, Int], rankVector: DenseVector[Double]): ListBuffer[(Double, String)] = {
     val rankOnLink = new ListBuffer[(Double, String)]
     val vectorData = rankVector.data
     var it: Int = 0;
     for (link <- allLinks) {
-      rankOnLink.addOne((vectorData(it), link))
+      rankOnLink.addOne((vectorData(it), link._1))
       it += 1
     }
     rankOnLink
   }
 
-  private def createLinksMatrix(allLinks: mutable.HashSet[String], pageOnLinks: mutable.HashMap[String, List[String]]) = {
+  private def createLinksMatrix(allLinks: mutable.HashMap[String, Int], pageOnLinks: mutable.HashMap[String, List[String]]) = {
     val sparseMatrix = CSCMatrix.zeros[Double](allLinks.size, allLinks.size)
-    val linksWithIdx = allLinks.toIndexedSeq
     var rowIdx: Int = 0;
-    var matrixSize = pageOnLinks.size
+    val matrixSize = pageOnLinks.size
     for (mapEntry <- pageOnLinks) {
       val redirectionCount = mapEntry._2.length
       mapEntry._2.foreach(url => {
-        val colIdx = linksWithIdx.indexOf(url)
-        sparseMatrix.update(colIdx, rowIdx, 1.0 / redirectionCount)
+        val colIdx = allLinks.get(url)
+        if (colIdx.isDefined) {
+          sparseMatrix.update(colIdx.get, rowIdx, 1.0 / redirectionCount)
+        }
       })
       rowIdx += 1
-      print(s"\r(${(rowIdx.toDouble / matrixSize)*100}%)")
+      print(s"\r(${(rowIdx.toDouble / matrixSize) * 100}%)")
     }
     sparseMatrix
   }
 
-  private def collectDataFromFile(allLinks: mutable.HashSet[String], pageOnLinks: mutable.HashMap[String, List[String]], source: BufferedSource): Unit = {
+  private def collectDataFromFile(allLinks: mutable.HashMap[String, Int], pageOnLinks: mutable.HashMap[String, List[String]], source: BufferedSource): Unit = {
+    var cnt: Int = 0
     for (line <- source.getLines()) {
       val i = line.indexOf("|")
       val page = line.substring(0, i - 1)
       val pageLinks = line.substring(i + 1).split(", ").map(s => s.trim).toList
-      allLinks.addOne(page)
-      allLinks.addAll(pageLinks)
+      if (!allLinks.contains(page)) {
+        allLinks.put(page, cnt);
+        cnt += 1
+      }
+      for (link <- pageLinks) {
+        if (!allLinks.contains(link)) {
+          allLinks.put(link, cnt)
+          cnt += 1
+        }
+      }
       pageOnLinks.put(page, pageLinks)
     }
   }
