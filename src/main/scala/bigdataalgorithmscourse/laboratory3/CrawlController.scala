@@ -6,15 +6,15 @@ import breeze.linalg.{CSCMatrix, DenseVector}
 import java.io.{File, FileWriter}
 import java.nio.file.Paths
 import java.sql.Timestamp
-import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
+import java.util.{Date, Scanner}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.{BufferedSource, Source}
 import scala.util.Using
 import scala.util.control.Breaks._
 
-object Crawler {
+object CrawlController {
 
   private val visitedURLS = createConcurrentSet[String]()
   private val linksConnections = new ConcurrentHashMap[String, Set[String]]()
@@ -31,18 +31,15 @@ object Crawler {
       System.exit(1)
     }
 
-
     args(0).toLowerCase match {
       case "rank" => handleRankMode(args)
       case "crawl" => handleCrawlMode(args)
-      case "analyse" => {
-        val urls = redInputLinks().toSet
-      }
+      case "analyse" => handleCrawlMode(args, infoMode = true)
       case _ => throw new IllegalArgumentException("Incorrect input")
     }
   }
 
-  private def handleRankMode(args: Array[String]): Unit = {
+  def handleRankMode(args: Array[String]): Unit = {
     if (args.length < 4 || args(2).isBlank) throw new IllegalArgumentException("Incorrect input")
 
     val allLinks = new mutable.HashMap[String, Int]()
@@ -65,8 +62,15 @@ object Crawler {
     }
 
     println(YELLOW.makeColor(s"\r[Info] ### Page Ranking ###"))
-    val resultRank = constructResultPageRanking(allLinks, rankVector).take(100).sortBy { case (x, _) => -x }
-    println(resultRank.map(x => s"${BLUE.makeColor("[Value]")} ${x._1} ${BLUE.makeColor("[Page]")}: ${x._2} ").mkString("\r", "\n", ""))
+    val pageRank = constructResultPageRanking(allLinks, rankVector)
+    val resultRank = pageRank.take(100).sortBy { case (x, _) => -x }
+    println(resultRank.map(x => f"${BLUE.makeColor("[Value]")}%s ${x._1}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._2}%s ").mkString("\r", "\n", ""))
+    Using(new FileWriter(System.getProperty("user.dir") + File.separator + "page_rank.txt")) { fileWriter => {
+      pageRank.foreach(entry => {
+        fileWriter.write(entry._2 + " | " + entry._1 + "\n")
+      })
+    }
+    }
   }
 
   private def constructResultPageRanking(allLinks: mutable.HashMap[String, Int], rankVector: DenseVector[Double]): ListBuffer[(Double, String)] = {
@@ -118,14 +122,14 @@ object Crawler {
     }
   }
 
-  private def handleCrawlMode(args: Array[String]) = {
+  private def handleCrawlMode(args: Array[String], infoMode: Boolean = false) = {
     if (args.length < 3 || args(2).isBlank) throw new IllegalAccessException("Incorrect input")
-    val urls: Array[String] = redInputLinks(args(1).toInt)
 
-    val linkCrawler = new LinkCrawler(urls, visitedURLS, "en.wikipedia.org", linksConnections, definedDeep = 1)
+    val urls: Array[String] = redInputLinks(args(1).toInt)
+    val linkCrawler = new LinkCrawler(urls, visitedURLS, "en.wikipedia.org", linksConnections, definedDeep = 2)
     val threads = linkCrawler.toRunCrawlingThreads
     threads.foreach(th => th.start())
-    val checker: Thread = getControlThread(linkCrawler, "Checker")
+    val checker: Thread = getControlThread(linkCrawler, "Checker", extendedInfo = infoMode)
     checker.start()
     threads.foreach(th => th.join())
     checker.join()
@@ -169,13 +173,12 @@ object Crawler {
   }
 
   private def redInputLinks(count: Int = -1): Array[String] = {
-    /*println(s"Enter ${if (count > 0) count else ""} links: ")
-    val scanner = new Scanner(System.in)*/
-    //    val strings = /*scanner.nextLine()*/ "https://en.wikipedia.org/wiki/Main_Page https://en.wikipedia.org/wiki/Dog https://en.wikipedia.org/wiki/Java".split("[\t ,]")
-    val strings = /*scanner.nextLine()*/ "https://en.wikipedia.org/wiki/Main_Page".split("[\t ,]")
+    println(s"Enter ${if (count > 0) count else ""} links: ")
+    val scanner = new Scanner(System.in)
+    val strings = scanner.nextLine().split("[\t ,]")
+    scanner.close()
     if (count > 0)
       return strings.take(count)
-    //    scanner.close()
     strings
   }
 

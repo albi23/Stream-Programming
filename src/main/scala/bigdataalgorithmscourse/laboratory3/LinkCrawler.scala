@@ -48,7 +48,7 @@ class LinkCrawler(val toVisitUrls: Array[String],
     threads
   }
 
-  private def crawl(deep: Long = 5, infoMode: Boolean = false): Unit = {
+  private def crawl(deep: Long = 5): Unit = {
 
     while (urlsQueue.nonEmpty) {
       val url = urlsQueue.head._1
