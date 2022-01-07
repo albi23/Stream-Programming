@@ -4,6 +4,7 @@ import bigdataalgorithmscourse.utils.Color.{BLUE, RED, YELLOW}
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -30,15 +31,16 @@ object SearchEngine {
       println(YELLOW.makeColor(s"[Info] Searched word: $searchedWord"))
 
 
+      val progress = new AtomicInteger(1)
       val futureResult: Future[ListBuffer[(String, Double)]] =
-        Future.traverse(currentPageRank) { pageRank =>
+        Future.traverse(currentPageRank.take(100)) { pageRank =>
           Future {
             var updatedPageRank: (String, Double) = null
             val optDoc: Option[Document] = request(pageRank._1)
             if (optDoc.isDefined) {
               val wordCount = optDoc.get.text().split(" ").count(x => searchedWord.equalsIgnoreCase(x))
               updatedPageRank = (pageRank._1, pageRank._2 * wordCount)
-              print(YELLOW.makeColor(s"\r ${Thread.currentThread().getName} [word count]: $wordCount [Page] ${pageRank._1} "))
+              print(YELLOW.makeColor(s"\r ${(progress.incrementAndGet().toDouble / currentPageRank.length) * 100}% [word count]: $wordCount [Page] ${pageRank._1} "))
             } else {
               updatedPageRank = (pageRank._1, 0)
             }
@@ -46,9 +48,13 @@ object SearchEngine {
           }
         }
 
-      val mappedList = Await.result(futureResult, Duration.Inf)
-      mappedList.sortBy { case (_, x) => x * (-1) }
-      println(mappedList.take(5).map(x => f"\n${BLUE.makeColor("[Value]")}%s ${x._2}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._1}%s ").mkString("\r", "\n", ""))
+      val result = Await.result(futureResult, Duration.Inf) // waiting for threads
+      println("\r\n\n")
+      result
+        .sortBy { case (_, x) => x * (-1) }
+        .take(5)
+        .map(x => f"${BLUE.makeColor("[Value]")}%s ${x._2}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._1}%s ")
+        .foreach(rank => println(rank))
     }
   }
 
