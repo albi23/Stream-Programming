@@ -75,7 +75,6 @@ class LinkCrawler(val toVisitUrls: Array[String],
 
           }
         })
-        //        println(totalLinks.get())
         if (siblings.isEmpty || optDoc.isEmpty) {
           siblings.addOne(tuple._2)
         }
