@@ -5,9 +5,12 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.io.{BufferedSource, Source}
 import scala.util.Using
-;
+
 
 object SearchEngine {
 
@@ -26,21 +29,26 @@ object SearchEngine {
       val searchedWord = args(1)
       println(YELLOW.makeColor(s"[Info] Searched word: $searchedWord"))
 
-      val updated = currentPageRank.map((pageRank: (String, Double)) => {
-        var t: (String, Double) = null
-        val optDoc: Option[Document] = request(pageRank._1)
-        if (optDoc.isDefined) {
-          val wordCount = optDoc.get.text().split(" ").count(x => searchedWord.equalsIgnoreCase(x))
-          t = (pageRank._1, pageRank._2 * wordCount)
-          println(YELLOW.makeColor(s"[word count]: $wordCount [Page] ${pageRank._1} "))
 
-        } else {
-          t = (pageRank._1, 0)
+      val futureResult: Future[ListBuffer[(String, Double)]] =
+        Future.traverse(currentPageRank) { pageRank =>
+          Future {
+            var updatedPageRank: (String, Double) = null
+            val optDoc: Option[Document] = request(pageRank._1)
+            if (optDoc.isDefined) {
+              val wordCount = optDoc.get.text().split(" ").count(x => searchedWord.equalsIgnoreCase(x))
+              updatedPageRank = (pageRank._1, pageRank._2 * wordCount)
+              print(YELLOW.makeColor(s"\r ${Thread.currentThread().getName} [word count]: $wordCount [Page] ${pageRank._1} "))
+            } else {
+              updatedPageRank = (pageRank._1, 0)
+            }
+            updatedPageRank
+          }
         }
-        t
-      }).sortBy { case (_, x) => x * (-1) }
 
-      println(updated.take(5).map(x => f"${BLUE.makeColor("[Value]")}%s ${x._2}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._1}%s ").mkString("\r", "\n", ""))
+      val mappedList = Await.result(futureResult, Duration.Inf)
+      mappedList.sortBy { case (_, x) => x * (-1) }
+      println(mappedList.take(5).map(x => f"\n${BLUE.makeColor("[Value]")}%s ${x._2}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._1}%s ").mkString("\r", "\n", ""))
     }
   }
 
