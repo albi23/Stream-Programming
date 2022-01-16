@@ -4,6 +4,7 @@ import bigdataalgorithmscourse.utils.Color.{BLUE, RED, YELLOW}
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
+import java.io.{File, FileWriter}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +34,7 @@ object SearchEngine {
 
       val progress = new AtomicInteger(1)
       val futureResult: Future[ListBuffer[(String, Double)]] =
-        Future.traverse(currentPageRank.take(100)) { pageRank =>
+        Future.traverse(currentPageRank) { pageRank =>
           Future {
             var updatedPageRank: (String, Double) = null
             val optDoc: Option[Document] = request(pageRank._1)
@@ -50,11 +51,16 @@ object SearchEngine {
 
       val result = Await.result(futureResult, Duration.Inf) // waiting for threads
       println("\r\n\n")
-      result
+      val res = result
         .sortBy { case (_, x) => x * (-1) }
         .take(5)
         .map(x => f"${BLUE.makeColor("[Value]")}%s ${x._2}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._1}%s ")
+      res
         .foreach(rank => println(rank))
+      Using(new FileWriter(System.getProperty("user.dir") + File.separator + s"rank_for_word_${searchedWord}.txt")) { fileWriter => {
+        res.foreach(entry => {fileWriter.write(entry + "\n")})
+      }
+      }
     }
   }
 

@@ -92,9 +92,9 @@ class LinkCrawler(val toVisitUrls: Array[String],
     println(YELLOW.makeColor(s"[Info] ### Reached pages ${reachedPage.get()}"))
     println(YELLOW.makeColor(s"[Info] ### Avg links amount on pages ${totalLinks.get() / reachedPage.get().toDouble}"))
     println(YELLOW.makeColor(s"[Info] Connection between pages:"))
-    //    urlConnections.forEach((k, v) => {
-    //      print(k + " with => " + v.map(l => l.split("org")(1)).mkString("[", ", ", "]") + "\n\n")
-    //    })
+//    val v = urlConnections.get("https://en.wikipedia.org/wiki/Main_Page")
+//          print("https://en.wikipedia.org/wiki/Main_Page with => " + v.map(l => l.split("org")(1)).mkString("[", ", ", "]") + "\n\n")
+
   }
 
   def request(url: String): Option[Document] = {

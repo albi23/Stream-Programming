@@ -62,10 +62,10 @@ object CrawlController {
     }
 
     println(YELLOW.makeColor(s"\r[Info] ### Page Ranking ###"))
-    val pageRank = constructResultPageRanking(allLinks, rankVector)
-    val resultRank = pageRank.take(100).sortBy { case (x, _) => -x }
+    val pageRank = constructResultPageRanking(allLinks, rankVector).sortBy { case (x, _) => -x }
+    val resultRank = pageRank.take(100)
     println(resultRank.map(x => f"${BLUE.makeColor("[Value]")}%s ${x._1}%5.18f ${BLUE.makeColor("[Page]")}%s: ${x._2}%s ").mkString("\r", "\n", ""))
-    Using(new FileWriter(System.getProperty("user.dir") + File.separator + "page_rank.txt")) { fileWriter => {
+    Using(new FileWriter(System.getProperty("user.dir") + File.separator + "big_test_rank.txt")) { fileWriter => {
       pageRank.foreach(entry => {
         fileWriter.write(entry._2 + " | " + entry._1 + "\n")
       })
@@ -172,6 +172,7 @@ object CrawlController {
     checker
   }
 
+  // https://en.wikipedia.org/wiki/Main_Page
   private def redInputLinks(count: Int = -1): Array[String] = {
     println(s"Enter ${if (count > 0) count else ""} links: ")
     val scanner = new Scanner(System.in)
